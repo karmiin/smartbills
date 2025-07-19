@@ -309,13 +309,11 @@ def login():
     if not msal_app:
         flash("Errore nella configurazione dell'autenticazione", "error")
         return redirect(url_for('home'))
-    
     # Costruisci l'URL di autorizzazione per Azure AD B2C
     auth_url = msal_app.get_authorization_request_url(
         AZURE_B2C_SCOPES,
         redirect_uri=AZURE_B2C_REDIRECT_URI
     )
-    
     return redirect(auth_url)
 
 @app.route("/auth/callback")

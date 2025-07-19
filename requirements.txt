@@ -10,4 +10,3 @@ azure-cosmos>=4.5.0
 numpy
 azure-ai-ml
 azure-identity
-gunicorn
