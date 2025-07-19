@@ -1,0 +1,12 @@
+flask
+werkzeug
+azure-storage-blob
+python-dotenv
+msal
+flask-session
+requests
+azure-ai-formrecognizer>=3.3.0
+azure-cosmos>=4.5.0
+numpy
+azure-ai-ml
+azure-identity

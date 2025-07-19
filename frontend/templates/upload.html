@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Upload PDF - Smart Bills{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center">
+                    <h2><i class="fas fa-cloud-upload-alt me-2"></i>Carica il tuo file PDF</h2>
+                    <p class="mb-0">Salvataggio sicuro su Azure Cloud Storage</p>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Area di upload -->
+                    <div id="drop-area" class="upload-area border-2 border-dashed p-5 text-center mb-4">
+                        <div id="upload-content">
+                            <i class="fas fa-file-pdf fa-3x text-primary mb-3"></i>
+                            <h4 class="text-muted">Trascina qui il tuo file PDF</h4>
+                            <p class="text-muted">oppure</p>
+                            <button type="button" class="btn btn-primary btn-lg" onclick="document.getElementById('file-input').click()">
+                                <i class="fas fa-folder-open me-2"></i>Seleziona File
+                            </button>
+                            <input type="file" id="file-input" accept=".pdf" style="display: none;">
+                            <p class="text-muted mt-3 small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Dimensione massima: 16MB | Solo file PDF
+                            </p>
+                        </div>
+                        
+                        <!-- Progress bar -->
+                        <div id="progress-container" style="display: none;">
+                            <div class="progress mb-3">
+                                <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <p id="progress-text" class="text-muted">Caricamento in corso...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Area messaggi -->
+                    <div id="message-area"></div>
+                    
+                    <!-- File info -->
+                    <div id="file-info" style="display: none;" class="alert alert-info">
+                        <h6><i class="fas fa-file-pdf me-2"></i>File selezionato:</h6>
+                        <p id="file-details" class="mb-0"></p>
+                        <button id="upload-btn" class="btn btn-success mt-2">
+                            <i class="fas fa-upload me-2"></i>Carica File
+                        </button>
+                        <button id="cancel-btn" class="btn btn-secondary mt-2 ms-2">
+                            <i class="fas fa-times me-2"></i>Annulla
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Suggerimenti -->
+            <div class="card mt-4 border-0">
+                <div class="card-body">
+                    <h5><i class="fas fa-lightbulb text-warning me-2"></i>Suggerimenti:</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Assicurati che il file sia in formato PDF</li>
+                        <li><i class="fas fa-check text-success me-2"></i>La dimensione massima del file è 16MB</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Puoi trascinare il file direttamente nell'area di upload</li>
+                        <li><i class="fas fa-check text-success me-2"></i>I file vengono salvati in modo sicuro sul server</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedFile = null;
+
+// Elementi DOM
+const dropArea = document.getElementById('drop-area');
+const fileInput = document.getElementById('file-input');
+const fileInfo = document.getElementById('file-info');
+const fileDetails = document.getElementById('file-details');
+const uploadBtn = document.getElementById('upload-btn');
+const cancelBtn = document.getElementById('cancel-btn');
+const messageArea = document.getElementById('message-area');
+const progressContainer = document.getElementById('progress-container');
+const progressBar = document.getElementById('progress-bar');
+const progressText = document.getElementById('progress-text');
+const uploadContent = document.getElementById('upload-content');
+
+// Eventi per drag & drop
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropArea.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropArea.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropArea.addEventListener(eventName, unhighlight, false);
+});
+
+dropArea.addEventListener('drop', handleDrop, false);
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function highlight() {
+    dropArea.classList.add('border-primary', 'bg-light');
+}
+
+function unhighlight() {
+    dropArea.classList.remove('border-primary', 'bg-light');
+}
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleFiles(files);
+}
+
+// Gestione selezione file
+fileInput.addEventListener('change', function() {
+    handleFiles(this.files);
+});
+
+function handleFiles(files) {
+    if (files.length > 0) {
+        const file = files[0];
+        if (validateFile(file)) {
+            selectedFile = file;
+            showFileInfo(file);
+        }
+    }
+}
+
+function validateFile(file) {
+    // Controlla il tipo di file
+    if (file.type !== 'application/pdf') {
+        showMessage('Errore: Solo file PDF sono ammessi.', 'danger');
+        return false;
+    }
+    
+    // Controlla la dimensione (16MB)
+    if (file.size > 16 * 1024 * 1024) {
+        showMessage('Errore: Il file è troppo grande. Dimensione massima: 16MB.', 'danger');
+        return false;
+    }
+    
+    return true;
+}
+
+function showFileInfo(file) {
+    const size = (file.size / 1024 / 1024).toFixed(2);
+    fileDetails.innerHTML = `
+        <strong>Nome:</strong> ${file.name}<br>
+        <strong>Dimensione:</strong> ${size} MB<br>
+        <strong>Tipo:</strong> ${file.type}
+    `;
+    fileInfo.style.display = 'block';
+    clearMessages();
+}
+
+function showMessage(message, type) {
+    messageArea.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+}
+
+function clearMessages() {
+    messageArea.innerHTML = '';
+}
+
+// Upload del file
+uploadBtn.addEventListener('click', function() {
+    if (selectedFile) {
+        uploadFile(selectedFile);
+    }
+});
+
+function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Mostra progress bar
+    uploadContent.style.display = 'none';
+    progressContainer.style.display = 'block';
+    fileInfo.style.display = 'none';
+    
+    // Simula progresso
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        progressBar.style.width = progress + '%';
+    }, 100);
+    
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        
+        setTimeout(() => {
+            if (data.success) {
+                showMessage(data.message + 
+                    ' <a href="/dashboard" class="alert-link">Visualizza nella Dashboard</a>', 'success');
+                resetUpload();
+            } else {
+                showMessage(data.error, 'danger');
+                resetUpload();
+            }
+        }, 500);
+    })
+    .catch(error => {
+        clearInterval(progressInterval);
+        showMessage('Errore durante l\'upload: ' + error.message, 'danger');
+        resetUpload();
+    });
+}
+
+// Reset dell'area di upload
+cancelBtn.addEventListener('click', resetUpload);
+
+function resetUpload() {
+    selectedFile = null;
+    fileInput.value = '';
+    fileInfo.style.display = 'none';
+    progressContainer.style.display = 'none';
+    uploadContent.style.display = 'block';
+    progressBar.style.width = '0%';
+}
+</script>
+
+<style>
+.upload-area {
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.upload-area.border-primary {
+    background-color: #f8f9fa !important;
+    border-color: #0d6efd !important;
+}
+
+.card {
+    border-radius: 15px;
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+}
+
+.btn {
+    border-radius: 25px;
+    padding: 10px 20px;
+}
+
+.progress {
+    height: 20px;
+    border-radius: 10px;
+}
+
+.alert {
+    border-radius: 10px;
+}
+
+.fa-3x {
+    color: #0d6efd;
+}
+
+.upload-area:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="text-center mb-5">
+                {% if user %}
+                    <h1 class="display-4 text-primary mb-3">
+                        {% block title %} Bentornato, {{ user.name }}! {% endblock %}
+                    </h1>
+                    <p class="lead text-muted">
+                        La tua area personale per il caricamento di file PDF
+                    </p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-user-shield"></i> 
+                        Sei connesso alla tua area personale. I tuoi file sono privati e sicuri.
+                    </div>
+                {% else %}
+                    <h1 class="display-4 text-primary mb-3">
+                        Benvenuto in Smart Bills!
+                    </h1>
+                                        {% if azure_b2c_configured %}
+                        <p class="lead text-muted">
+                            Registrati o accedi per accedere alla tua area personale
+                        </p>
+                        <div class="alert alert-info">
+                            <i class="fas fa-user-plus"></i> 
+                            <strong>Nuovo utente?</strong> Puoi registrarti facilmente con email/password o con i tuoi account social.
+                        </div>
+                        <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg mb-4">
+                            <i class="fas fa-user-plus"></i> Registrati / Accedi
+                        </a>
+                    {% else %}
+                        <p class="lead text-muted">
+                            Modalità sviluppo - Nessuna autenticazione richiesta
+                        </p>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>Modalità Sviluppo:</strong> Azure AD B2C non è configurato.
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">Carica File PDF</h5>
+                            <p class="card-text text-muted">
+                                Carica i tuoi documenti PDF nella tua area personale sicura su Azure Cloud.
+                            </p>
+                            {% if user %}
+                                <a href="{{ url_for('upload_page') }}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-upload me-2"></i>Inizia Upload
+                                </a>
+                            {% else %}
+                                <button class="btn btn-secondary btn-lg" disabled>
+                                    <i class="fas fa-lock me-2"></i>Login Richiesto
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-tachometer-alt fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Dashboard</h5>
+                            <p class="card-text text-muted">
+                                Visualizza, gestisci e scarica tutti i tuoi file PDF personali.
+                            </p>
+                            {% if user %}
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-success btn-lg">
+                                    <i class="fas fa-chart-line me-2"></i>Dashboard
+                                </a>
+                            {% else %}
+                                <button class="btn btn-secondary btn-lg" disabled>
+                                    <i class="fas fa-lock me-2"></i>Login Richiesto
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-file-invoice-dollar fa-3x text-warning mb-3"></i>
+                            <h5 class="card-title">Gestione Bollette</h5>
+                            <p class="card-text text-muted">
+                                Analizza e gestisci le tue bollette con estrazione automatica dei dati AI.
+                            </p>
+                            {% if user %}
+                                <a href="{{ url_for('bills_management') }}" class="btn btn-warning btn-lg">
+                                    <i class="fas fa-receipt me-2"></i>Gestisci Bollette
+                                </a>
+                            {% else %}
+                                <button class="btn btn-secondary btn-lg" disabled>
+                                    <i class="fas fa-lock me-2"></i>Login Richiesto
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            
+            
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <h5 class="text-center mb-4">
+                                <i class="fas fa-robot text-primary me-2"></i>Funzionalità AI e Analytics</h5>
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <i class="fas fa-brain fa-2x text-primary mb-2"></i>
+                                    <h6>Azure Form Recognizer</h6>
+                                    <p class="small text-muted">Estrazione automatica dati da bollette PDF</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <i class="fas fa-database fa-2x text-success mb-2"></i>
+                                    <h6>Cosmos DB</h6>
+                                    <p class="small text-muted">Storage scalabile per dati strutturati</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                                    <h6>Analytics</h6>
+                                    <p class="small text-muted">Analisi consumi e trend nel tempo</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <i class="fas fa-crystal-ball fa-2x text-warning mb-2"></i>
+                                    <h6>Forecast</h6>
+                                    <p class="small text-muted">Previsioni spese e consumi futuri</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <h5 class="text-center mb-4">
+                                <i class="fas fa-star text-warning me-2"></i>Caratteristiche principali
+                            </h5>
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <i class="fas fa-shield-alt text-success fa-2x mb-2"></i>
+                                    <h6>Sicuro</h6>
+                                    <small class="text-muted">Upload sicuro e protetto</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <i class="fas fa-cloud text-primary fa-2x mb-2"></i>
+                                    <h6>Azure Cloud</h6>
+                                    <small class="text-muted">Storage nel cloud Azure</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <i class="fas fa-tachometer-alt text-success fa-2x mb-2"></i>
+                                    <h6>Dashboard</h6>
+                                    <small class="text-muted">Gestione completa dei file</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <i class="fas fa-mobile-alt text-info fa-2x mb-2"></i>
+                                    <h6>Responsive</h6>
+                                    <small class="text-muted">Funziona su tutti i dispositivi</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,826 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Bollette - Smart Bills{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header della Gestione Bollette -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 bg-gradient-success text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2><i class="fas fa-file-invoice-dollar me-2"></i>Gestione Bollette</h2>
+                            <p class="mb-1">
+                                <i class="fas fa-user me-1"></i>{{ user.name }} ({{ user.email }})
+                            <// Funzioni per gestire il reset forzato
+function forceReloadForecast() {
+    // Distruggi il forecast esistente
+    if (forecastChart) {
+        forecastChart.destroy();
+        forecastChart = null;
+    }
+    
+    // Ricarica forzato - solo per tipi specifici
+    const billType = document.getElementById('forecastType').value;
+    
+    if (!billType) {
+        displayForecastError('Seleziona un tipo di bolletta per le previsioni');
+        return;
+    }
+    
+    const url = `/bills/api/forecast?type=${billType}`;
+    
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                displayForecastError(data.message || data.error);
+            } else {
+                createForecastChart(data);
+                displayForecastInfo(data);
+            }
+        })
+        .catch(error => {
+            console.error('Errore caricamento forecast:', error);
+            displayForecastError(error.message || 'Errore nel caricamento delle previsioni');             <p class="mb-0 opacity-75">
+                                <i class="fas fa-robot me-1"></i>Estrazione automatica dati con Azure AI
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-brain me-1"></i>
+                                    AI Processing
+                                </span>
+                                <span class="badge bg-info text-dark">
+                                    <i class="fas fa-database me-1"></i>
+                                    Cosmos DB
+                                </span>
+                            </div>
+                            <a href="{{ url_for('upload_page') }}" class="btn btn-light btn-lg">
+                                <i class="fas fa-plus me-2"></i>Carica Bolletta
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche Rapide -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
+                    <h4 class="card-title">{{ stats.total_bills }}</h4>
+                    <p class="text-muted">Bollette Totali</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                    <h4 class="card-title">{{ stats.bills_needing_review }}</h4>
+                    <p class="text-muted">Da Rivedere</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-layer-group fa-2x text-info mb-2"></i>
+                    <h4 class="card-title">{{ stats.bills_by_type|length }}</h4>
+                    <p class="text-muted">Tipi Bollette</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-euro-sign fa-2x text-success mb-2"></i>
+                    <h4 class="card-title">
+                        €{{ "%.2f"|format(stats.total_amounts_by_type.values()|sum) }}
+                    </h4>
+                    <p class="text-muted">Totale Importi</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtri e Controlli -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtra per Tipo</h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary active" data-filter="all">
+                            Tutte ({{ stats.total_bills }})
+                        </button>
+                        {% for bill_type, bills_list in stats.bills_by_type.items() %}
+                            <button type="button" class="btn btn-outline-primary" data-filter="{{ bill_type }}">
+                                {{ bill_type.title() }} ({{ bills_list|length }})
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Vista</h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-secondary active" data-view="list">
+                            <i class="fas fa-list"></i> Lista
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-view="chart">
+                            <i class="fas fa-chart-pie"></i> Grafici
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Area messaggi -->
+    <div id="message-area"></div>
+
+    <!-- Lista Bollette -->
+    <div id="bills-list" class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Le Tue Bollette</h5>
+                            <small class="text-muted">Estratte automaticamente con AI</small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Cerca bollette..." id="search-bills">
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if bills %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Fornitore</th>
+                                        <th>Importo</th>
+                                        <th>Scadenza</th>
+                                        <th>Data Upload</th>
+                                        <th>Status</th>
+                                        <th>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for bill in bills %}
+                                    <tr data-bill-type="{{ bill.bill_type }}">
+                                        <td>
+                                            <span class="badge bg-{{ 
+                                                'primary' if bill.bill_type == 'electricity' else
+                                                'warning' if bill.bill_type == 'gas' else
+                                                'info' if bill.bill_type == 'water' else
+                                                'success' if bill.bill_type == 'telecom' else
+                                                'secondary'
+                                            }}">
+                                                {% if bill.bill_type == 'electricity' %}
+                                                    <i class="fas fa-bolt"></i> Elettricità
+                                                {% elif bill.bill_type == 'gas' %}
+                                                    <i class="fas fa-fire"></i> Gas
+                                                {% elif bill.bill_type == 'water' %}
+                                                    <i class="fas fa-tint"></i> Acqua
+                                                {% elif bill.bill_type == 'telecom' %}
+                                                    <i class="fas fa-phone"></i> Telefono
+                                                {% elif bill.bill_type == 'internet' %}
+                                                    <i class="fas fa-wifi"></i> Internet
+                                                {% else %}
+                                                    <i class="fas fa-file"></i> Altro
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>{{ bill.supplier or 'N/D' }}</strong>
+                                            {% if bill.account_number %}
+                                                <br><small class="text-muted">{{ bill.account_number }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if bill.amount %}
+                                                <strong class="text-success">€{{ "%.2f"|format(bill.amount) }}</strong>
+                                            {% else %}
+                                                <span class="text-muted">N/D</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if bill.due_date %}
+                                                {{ bill.due_date[:10] }}
+                                            {% else %}
+                                                <span class="text-muted">N/D</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ bill.upload_date[:10] }}
+                                            <br><small class="text-muted">{{ bill.upload_date[11:16] }}</small>
+                                        </td>
+                                        <td>
+                                            {% if bill.manual_review_needed %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-exclamation-triangle"></i> Da Rivedere
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check"></i> Processata
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary btn-sm" 
+                                                        onclick="viewBillDetails('{{ bill.id }}')" 
+                                                        title="Vedi Dettagli">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <a href="{{ url_for('download_file', filename=bill.filename) }}" 
+                                                   class="btn btn-outline-success btn-sm" 
+                                                   title="Scarica PDF">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                {% if bill.manual_review_needed %}
+                                                <button class="btn btn-outline-warning btn-sm" 
+                                                        onclick="editBill('{{ bill.id }}')" 
+                                                        title="Modifica Dati">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Nessuna bolletta caricata</h5>
+                            <p class="text-muted">Carica la tua prima bolletta per iniziare l'analisi automatica!</p>
+                            <a href="{{ url_for('upload_page') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Carica Prima Bolletta
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista Grafici (nascosta inizialmente) -->
+    <div id="charts-view" class="row d-none">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Distribuzione per Tipo</h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px; width: 100%; overflow: hidden;">
+                        <canvas id="typeChart" width="400" height="300" style="max-width: 100%; max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Andamento Mensile</h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px; width: 100%; overflow: hidden;">
+                        <canvas id="monthlyChart" width="400" height="300" style="max-width: 100%; max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Nuovo: Grafico Forecast -->
+        <div class="col-12 mt-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-crystal-ball me-2"></i>Previsioni Future</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="forceReloadForecast()">
+                            Aggiorna Previsioni
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetAllCharts()">
+                            Reset Grafici
+                        </button>
+                        <select class="form-select form-select-sm" id="forecastType" style="max-width: 150px;">
+                            <option value="electricity" selected>Elettricità</option>
+                            <option value="gas">Gas</option>
+                            <option value="water">Acqua</option>
+                            <option value="telecom">Telefonia</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px; width: 100%; overflow: hidden;">
+                        <canvas id="forecastChart" width="800" height="300" style="max-width: 100%; max-height: 300px;"></canvas>
+                    </div>
+                    <div id="forecastInfo" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+let currentFilter = 'all';
+let currentView = 'list';
+
+// Gestione filtri
+document.querySelectorAll('[data-filter]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Aggiorna UI bottoni
+        document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Filtra bollette
+        currentFilter = this.dataset.filter;
+        filterBills();
+    });
+});
+
+// Gestione viste
+document.querySelectorAll('[data-view]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Aggiorna UI bottoni
+        document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Cambia vista
+        currentView = this.dataset.view;
+        switchView();
+    });
+});
+
+function filterBills() {
+    const rows = document.querySelectorAll('#bills-list tbody tr');
+    
+    rows.forEach(row => {
+        const billType = row.dataset.billType;
+        if (currentFilter === 'all' || billType === currentFilter) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function switchView() {
+    const listView = document.getElementById('bills-list');
+    const chartsView = document.getElementById('charts-view');
+    
+    if (currentView === 'chart') {
+        listView.classList.add('d-none');
+        chartsView.classList.remove('d-none');
+        // Carica i grafici solo se non sono già stati caricati
+        if (!chartsLoaded) {
+            loadCharts();
+        }
+    } else {
+        listView.classList.remove('d-none');
+        chartsView.classList.add('d-none');
+        // Distruggi i grafici quando si nasconde la vista
+        destroyAllCharts();
+    }
+}
+
+function loadCharts() {
+    // Previeni caricamenti multipli
+    if (chartsLoaded) {
+        return;
+    }
+    
+    // Distruggi eventuali grafici esistenti
+    destroyAllCharts();
+    
+    // Carica dati per i grafici
+    fetch('/bills/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            createTypeChart(data.type_stats);
+            createMonthlyChart(data.monthly_stats);
+            // Carica il forecast
+            loadForecast();
+            chartsLoaded = true;
+        })
+        .catch(error => console.error('Errore caricamento grafici:', error));
+}
+
+function createTypeChart(typeStats) {
+    const canvas = document.getElementById('typeChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Distruggi il grafico precedente se esiste
+    if (typeChart) {
+        typeChart.destroy();
+        typeChart = null;
+    }
+    
+    const labels = Object.keys(typeStats);
+    const amounts = Object.values(typeStats).map(stat => stat.total_amount);
+    
+    typeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+            datasets: [{
+                data: amounts,
+                backgroundColor: [
+                    '#007bff', '#ffc107', '#17a2b8', '#28a745', 
+                    '#dc3545', '#6f42c1', '#fd7e14'
+                ]
+            }]
+        },
+        options: {
+            responsive: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            animation: false
+        }
+    });
+}
+
+function createMonthlyChart(monthlyStats) {
+    const canvas = document.getElementById('monthlyChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Distruggi il grafico precedente se esiste
+    if (monthlyChart) {
+        monthlyChart.destroy();
+        monthlyChart = null;
+    }
+    
+    const sortedMonths = Object.keys(monthlyStats).sort();
+    const amounts = sortedMonths.map(month => monthlyStats[month].total_amount);
+    
+    monthlyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: sortedMonths,
+            datasets: [{
+                label: 'Importo Totale (€)',
+                data: amounts,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '€' + value.toFixed(2);
+                        }
+                    }
+                }
+            },
+            animation: false
+        }
+    });
+}
+
+function viewBillDetails(billId) {
+    // TODO: Implementare modal per dettagli bolletta
+    alert('Dettagli bolletta: ' + billId);
+}
+
+function editBill(billId) {
+    // TODO: Implementare editing bolletta
+    alert('Modifica bolletta: ' + billId);
+}
+
+// Ricerca bollette
+document.getElementById('search-bills').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#bills-list tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Forecast functionality
+let forecastChart = null;
+let typeChart = null;
+let monthlyChart = null;
+let chartsLoaded = false;
+
+// Funzione per distruggere tutti i grafici
+function destroyAllCharts() {
+    if (typeChart) {
+        typeChart.destroy();
+        typeChart = null;
+    }
+    if (monthlyChart) {
+        monthlyChart.destroy();
+        monthlyChart = null;
+    }
+    if (forecastChart) {
+        forecastChart.destroy();
+        forecastChart = null;
+    }
+    
+    // Reset dei canvas
+    const typeCanvas = document.getElementById('typeChart');
+    const monthlyCanvas = document.getElementById('monthlyChart');
+    const forecastCanvas = document.getElementById('forecastChart');
+    
+    if (typeCanvas) {
+        typeCanvas.width = typeCanvas.width; // Reset canvas
+    }
+    if (monthlyCanvas) {
+        monthlyCanvas.width = monthlyCanvas.width; // Reset canvas
+    }
+    if (forecastCanvas) {
+        forecastCanvas.width = forecastCanvas.width; // Reset canvas
+    }
+    
+    chartsLoaded = false;
+}
+
+function loadForecast() {
+    // Previeni caricamenti multipli
+    if (forecastChart) {
+        return;
+    }
+    
+    const billType = document.getElementById('forecastType').value;
+    
+    // Ora il forecast è solo per tipi specifici
+    if (!billType) {
+        displayForecastError('Seleziona un tipo di bolletta per le previsioni');
+        return;
+    }
+    
+    const url = `/bills/api/forecast?type=${billType}`;
+    
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                displayForecastError(data.message || data.error);
+            } else {
+                createForecastChart(data);
+                displayForecastInfo(data);
+            }
+        })
+        .catch(error => {
+            console.error('Errore caricamento forecast:', error);
+            displayForecastError(error.message || 'Errore nel caricamento delle previsioni');
+        });
+}
+
+function displayForecastError(message) {
+    // Trova il container del grafico forecast
+    const canvas = document.getElementById('forecastChart');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Mostra messaggio di errore
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#6c757d';
+        ctx.textAlign = 'center';
+        ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+    }
+    
+    // Aggiorna anche il pannello info
+    const infoDiv = document.querySelector('.forecast-info');
+    if (infoDiv) {
+        infoDiv.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                ${message}
+            </div>
+        `;
+    }
+}
+
+function createForecastChart(forecastData) {
+    const canvas = document.getElementById('forecastChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    if (forecastChart) {
+        forecastChart.destroy();
+        forecastChart = null;
+    }
+    
+    const labels = forecastData.predictions.map(p => p.month_name);
+    const predictedAmounts = forecastData.predictions.map(p => p.predicted_amount);
+    const minConfidence = forecastData.predictions.map(p => p.confidence_interval.min);
+    const maxConfidence = forecastData.predictions.map(p => p.confidence_interval.max);
+    
+    forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Previsione',
+                data: predictedAmounts,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                fill: false,
+                tension: 0.4
+            }, {
+                label: 'Intervallo Confidenza (Min)',
+                data: minConfidence,
+                borderColor: 'rgba(255, 99, 132, 0.3)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                fill: '+1',
+                borderDash: [5, 5]
+            }, {
+                label: 'Intervallo Confidenza (Max)',
+                data: maxConfidence,
+                borderColor: 'rgba(255, 99, 132, 0.3)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                fill: '-1',
+                borderDash: [5, 5]
+            }]
+        },
+        options: {
+            responsive: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '€' + value.toFixed(2);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': €' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            animation: false
+        }
+    });
+}
+
+function displayForecastInfo(forecastData) {
+    const infoDiv = document.getElementById('forecastInfo');
+    
+    let trendIcon = '';
+    let trendColor = '';
+    
+    switch(forecastData.trend) {
+        case 'increasing':
+            trendIcon = '📈';
+            trendColor = 'text-warning';
+            break;
+        case 'decreasing':
+            trendIcon = '📉';
+            trendColor = 'text-success';
+            break;
+        default:
+            trendIcon = '➡️';
+            trendColor = 'text-info';
+    }
+    
+    const note = forecastData.note ? `<div class="alert alert-info mt-2">${forecastData.note}</div>` : '';
+    
+    infoDiv.innerHTML = `
+        <div class="row">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h6>Trend</h6>
+                    <span class="${trendColor} fs-4">${trendIcon}</span>
+                    <p class="small text-muted">${forecastData.trend}</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h6>Media Storica</h6>
+                    <span class="fs-5 fw-bold">€${forecastData.historical_average.toFixed(2)}</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h6>Ultimo Mese</h6>
+                    <span class="fs-5 fw-bold">€${forecastData.last_month_amount.toFixed(2)}</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h6>Confidenza</h6>
+                    <span class="badge bg-${forecastData.confidence === 'high' ? 'success' : forecastData.confidence === 'medium' ? 'warning' : 'secondary'}">${forecastData.confidence}</span>
+                </div>
+            </div>
+        </div>
+        ${note}
+    `;
+}
+
+// Funzioni per gestire il reset forzato
+function forceReloadForecast() {
+    // Distruggi il forecast esistente
+    if (forecastChart) {
+        forecastChart.destroy();
+        forecastChart = null;
+    }
+    
+    // Ricarica forzato
+    const billType = document.getElementById('forecastType').value;
+    const url = billType ? `/bills/api/forecast?type=${billType}` : '/bills/api/forecast';
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            createForecastChart(data);
+            displayForecastInfo(data);
+        })
+        .catch(error => {
+            console.error('Errore caricamento forecast:', error);
+        });
+}
+
+function resetAllCharts() {
+    // Distruggi tutti i grafici e ricarica
+    destroyAllCharts();
+    setTimeout(() => {
+        loadCharts();
+    }, 100);
+}
+
+// Event listener per il filtro forecast
+document.addEventListener('DOMContentLoaded', function() {
+    const forecastTypeSelect = document.getElementById('forecastType');
+    if (forecastTypeSelect) {
+        forecastTypeSelect.addEventListener('change', function() {
+            forceReloadForecast();
+        });
+    }
+});
+</script>
+{% endblock %}

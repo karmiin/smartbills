@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Smart Bills{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header della Dashboard -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 bg-gradient-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard Personale</h2>
+                            <p class="mb-1">
+                                <i class="fas fa-user me-1"></i>{{ user.name }} ({{ user.email }})
+                            </p>
+                            <p class="mb-0 opacity-75">
+                                <i class="fas fa-folder me-1"></i>Area Privata: {{ user.folder }}
+                            </p>
+                            <small class="opacity-75">
+                                <i class="fas fa-cloud me-1"></i>
+                                Storage: {{ storage_info.container }}
+                                {% if storage_info.connected %}
+                                    <span class="badge bg-success ms-2">Connesso</span>
+                                {% else %}
+                                    <span class="badge bg-danger ms-2">Non Connesso</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="mb-2">
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-cloud me-1"></i>
+                                    Azure Cloud Storage
+                                </span>
+                                <span class="badge bg-info text-dark">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    Area Privata
+                                </span>
+                            </div>
+                            {% if storage_info.connected %}
+                                <a href="{{ url_for('upload_page') }}" class="btn btn-light btn-lg">
+                                    <i class="fas fa-plus me-2"></i>Carica Nuovo File
+                                </a>
+                            {% else %}
+                                <button class="btn btn-light btn-lg" disabled title="Azure non configurato">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Azure Non Configurato
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-file-pdf fa-2x text-danger mb-2"></i>
+                    <h4 class="card-title">{{ total_files }}</h4>
+                    <p class="text-muted">File Totali</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-hdd fa-2x text-info mb-2"></i>
+                    <h4 class="card-title">{{ total_size_mb }} MB</h4>
+                    <p class="text-muted">Spazio Utilizzato</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x text-success mb-2"></i>
+                    <h4 class="card-title">
+                        {% if files %}
+                            {{ files[0].formatted_time.split(' ')[0] }}
+                        {% else %}
+                            --
+                        {% endif %}
+                    </h4>
+                    <p class="text-muted">Ultimo Upload</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Area messaggi -->
+    <div id="message-area"></div>
+    
+    <!-- Avviso Azure non configurato -->
+    {% if not storage_info.connected %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Azure Blob Storage non configurato</h5>
+                <p class="mb-0">
+                    Per utilizzare questa applicazione, è necessario configurare Azure Blob Storage nel file <code>.env</code>.
+                    Contatta l'amministratore per ottenere le credenziali Azure necessarie.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Lista dei file -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-0"><i class="fas fa-list me-2"></i>I Tuoi File PDF</h5>
+                            <small class="text-muted">Area privata: {{ user.folder }}</small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleView('grid')">
+                                    <i class="fas fa-th"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm active" onclick="toggleView('list')">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if files %}
+                        <!-- Vista Lista (default) -->
+                        <div id="list-view">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th><i class="fas fa-file-pdf me-1"></i>Nome File</th>
+                                            <th><i class="fas fa-weight me-1"></i>Dimensione</th>
+                                            <th><i class="fas fa-calendar me-1"></i>Data Upload</th>
+                                            <th><i class="fas fa-map-marker-alt me-1"></i>Storage</th>
+                                            <th><i class="fas fa-cogs me-1"></i>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for file in files %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-file-pdf text-danger me-2"></i>
+                                                    <span class="fw-medium">{{ file.name }}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark">{{ file.size_mb }} MB</span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">{{ file.formatted_time }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{{ 'primary' if 'Azure' in file.location else 'secondary' }}">
+                                                    <i class="fas fa-{{ 'cloud' if 'Azure' in file.location else 'hdd' }} me-1"></i>
+                                                    {{ file.location }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('download_file', filename=file.name) }}" 
+                                                       class="btn btn-outline-primary btn-sm" 
+                                                       title="Download">
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
+                                                    <button type="button" 
+                                                            class="btn btn-outline-danger btn-sm" 
+                                                            onclick="deleteFile('{{ file.name }}')"
+                                                            title="Elimina">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Vista Griglia -->
+                        <div id="grid-view" style="display: none;">
+                            <div class="row g-3">
+                                {% for file in files %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="card border border-light shadow-sm h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                                            <h6 class="card-title text-truncate" title="{{ file.name }}">
+                                                {{ file.name }}
+                                            </h6>
+                                            <p class="card-text">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-weight me-1"></i>{{ file.size_mb }} MB<br>
+                                                    <i class="fas fa-calendar me-1"></i>{{ file.formatted_time.split(' ')[0] }}<br>
+                                                    <span class="badge bg-{{ 'primary' if 'Azure' in file.location else 'secondary' }} mt-1">
+                                                        <i class="fas fa-{{ 'cloud' if 'Azure' in file.location else 'hdd' }} me-1"></i>
+                                                        {{ file.location }}
+                                                    </span>
+                                                </small>
+                                            </p>
+                                            <div class="d-grid gap-2">
+                                                <a href="{{ url_for('download_file', filename=file.name) }}" 
+                                                   class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-download me-1"></i>Download
+                                                </a>
+                                                <button type="button" 
+                                                        class="btn btn-outline-danger btn-sm" 
+                                                        onclick="deleteFile('{{ file.name }}')">
+                                                    <i class="fas fa-trash me-1"></i>Elimina
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Stato vuoto -->
+                        <div class="text-center py-5">
+                            <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">Nessun file caricato</h4>
+                            <p class="text-muted mb-4">Non hai ancora caricato nessun file PDF.</p>
+                            <a href="{{ url_for('upload_page') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-cloud-upload-alt me-2"></i>Carica il primo file
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal di Conferma Eliminazione -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Conferma Eliminazione
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sei sicuro di voler eliminare il file <strong id="filename-to-delete"></strong>?</p>
+                <p class="text-muted">Questa azione non può essere annullata.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Annulla
+                </button>
+                <button type="button" class="btn btn-danger" id="confirm-delete">
+                    <i class="fas fa-trash me-1"></i>Elimina
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let fileToDelete = null;
+
+function toggleView(viewType) {
+    const listView = document.getElementById('list-view');
+    const gridView = document.getElementById('grid-view');
+    const listBtn = document.querySelector('button[onclick="toggleView(\'list\')"]');
+    const gridBtn = document.querySelector('button[onclick="toggleView(\'grid\')"]');
+
+    if (viewType === 'grid') {
+        listView.style.display = 'none';
+        gridView.style.display = 'block';
+        listBtn.classList.remove('active');
+        gridBtn.classList.add('active');
+    } else {
+        listView.style.display = 'block';
+        gridView.style.display = 'none';
+        gridBtn.classList.remove('active');
+        listBtn.classList.add('active');
+    }
+}
+
+function deleteFile(filename) {
+    fileToDelete = filename;
+    document.getElementById('filename-to-delete').textContent = filename;
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+document.getElementById('confirm-delete').addEventListener('click', function() {
+    if (fileToDelete) {
+        fetch(`/delete/${fileToDelete}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(data.message, 'success');
+                // Ricarica la pagina dopo 1 secondo
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showMessage(data.error, 'danger');
+            }
+            
+            // Chiudi il modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+            modal.hide();
+        })
+        .catch(error => {
+            showMessage('Errore durante l\'eliminazione: ' + error.message, 'danger');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+            modal.hide();
+        });
+    }
+});
+
+function showMessage(message, type) {
+    const messageArea = document.getElementById('message-area');
+    messageArea.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+}
+</script>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.btn-group .btn {
+    border-radius: 0.375rem;
+    margin-right: 2px;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+.table-responsive {
+    border-radius: 0.5rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.alert {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}
