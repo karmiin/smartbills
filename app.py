@@ -11,10 +11,8 @@ import msal
 from functools import wraps
 from bill_processor import bill_processor
 
-# Carica le variabili d'ambiente
+# Forza rebuild Azure - 2025-07-19
 load_dotenv()
-
-# Check if we're in testing mode
 TESTING = os.getenv('TESTING', 'False').lower() == 'true'
 
 app = Flask(__name__)
@@ -24,6 +22,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 # Usa solo le sessioni Flask standard (no Flask-Session)
 # Configurato per Azure Web App
 app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_TYPE'] = None  # Usa le sessioni Flask standard
 
 # Configurazione Azure AD B2C
 AZURE_B2C_TENANT_NAME = os.getenv('AZURE_B2C_TENANT_NAME')
