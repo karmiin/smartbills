@@ -8,31 +8,21 @@ from werkzeug.utils import secure_filename
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from dotenv import load_dotenv
 import msal
-from flask_session import Session
 from functools import wraps
 from bill_processor import bill_processor
+
+# Import Flask-Session solo se necessario
+if not os.getenv('WEBSITE_SITE_NAME'):  # Solo in sviluppo locale
+    from flask_session import Session
 
 # Carica le variabili d'ambiente
 load_dotenv()
 
 # Check if we're in testing mode
-TESTING = os.getenv('TESTING', 'False').lower() == 'true'
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'development-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-
-# Configurazione Flask Session per Azure Web App
-# In Azure Web App, il filesystem potrebbe essere read-only, quindi usiamo sessioni in memoria
-if os.getenv('WEBSITE_SITE_NAME'):  # Rileva se siamo su Azure Web App
-    app.config['SESSION_TYPE'] = 'null'  # Usa le sessioni Flask standard
-else:
-    app.config['SESSION_TYPE'] = 'filesystem'  # Per sviluppo locale
-    
-app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_KEY_PREFIX'] = 'pdf_app:'
-Session(app)
 
 # Configurazione Azure AD B2C
 AZURE_B2C_TENANT_NAME = os.getenv('AZURE_B2C_TENANT_NAME')
@@ -43,10 +33,8 @@ AZURE_B2C_POLICY_NAME = os.getenv('AZURE_B2C_POLICY_NAME')
 AZURE_B2C_AUTHORITY = os.getenv('AZURE_B2C_AUTHORITY')
 AZURE_B2C_REDIRECT_URI = os.getenv('AZURE_B2C_REDIRECT_URI')
 
-# Scope per Azure AD B2C - usa scopes minimi per evitare problemi
-AZURE_B2C_SCOPES = []  # Azure AD B2C può funzionare senza scopes espliciti
+AZURE_B2C_SCOPES = [] 
 
-# Configurazione Azure Storage (OBBLIGATORIA per produzione)
 AZURE_STORAGE_CONNECTION_STRING = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
 AZURE_CONTAINER_NAME = os.getenv('AZURE_BLOB_CONTAINER_NAME')
 
@@ -58,10 +46,6 @@ if not azure_b2c_configured:
     print("Per la produzione, configura Azure AD B2C per permettere registrazione/login degli utenti")
 
 # Verifica e inizializza Azure Storage
-if TESTING:
-    # Durante i test, non inizializziamo Azure
-    blob_service_client = None
-    container_client = None
 elif not AZURE_STORAGE_CONNECTION_STRING or AZURE_STORAGE_CONNECTION_STRING == 'DefaultEndpointsProtocol=https;AccountName=your_storage_account_name;AccountKey=your_storage_account_key;EndpointSuffix=core.windows.net':
     print("ATTENZIONE: Configurazioni Azure mancanti!")
     print("Modifica il file .env con le tue credenziali Azure reali")
