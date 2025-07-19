@@ -22,8 +22,13 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'development-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Configurazione Flask Session
-app.config['SESSION_TYPE'] = 'filesystem'
+# Configurazione Flask Session per Azure Web App
+# In Azure Web App, il filesystem potrebbe essere read-only, quindi usiamo sessioni in memoria
+if os.getenv('WEBSITE_SITE_NAME'):  # Rileva se siamo su Azure Web App
+    app.config['SESSION_TYPE'] = 'null'  # Usa le sessioni Flask standard
+else:
+    app.config['SESSION_TYPE'] = 'filesystem'  # Per sviluppo locale
+    
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'pdf_app:'
@@ -712,5 +717,7 @@ def api_consumption_trends():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Per Azure Web App, usa le variabili d'ambiente per porta e host
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
 
