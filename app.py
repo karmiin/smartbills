@@ -11,10 +11,6 @@ import msal
 from functools import wraps
 from bill_processor import bill_processor
 
-# Import Flask-Session solo se necessario
-if not os.getenv('WEBSITE_SITE_NAME'):  # Solo in sviluppo locale
-    from flask_session import Session
-
 # Carica le variabili d'ambiente
 load_dotenv()
 
@@ -25,19 +21,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'development-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Configurazione Flask Session per Azure Web App
-# In Azure Web App, il filesystem potrebbe essere read-only, quindi NON usiamo Flask-Session
-if os.getenv('WEBSITE_SITE_NAME'):  # Rileva se siamo su Azure Web App
-    # Su Azure Web App, usa le sessioni Flask standard (non Flask-Session)
-    app.config['SESSION_PERMANENT'] = False
-    # NON inizializzare Flask-Session su Azure
-else:
-    # Per sviluppo locale, usa Flask-Session con filesystem
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.config['SESSION_PERMANENT'] = False
-    app.config['SESSION_USE_SIGNER'] = True
-    app.config['SESSION_KEY_PREFIX'] = 'pdf_app:'
-    Session(app)
+# Usa solo le sessioni Flask standard (no Flask-Session)
+# Configurato per Azure Web App
+app.config['SESSION_PERMANENT'] = False
 
 # Configurazione Azure AD B2C
 AZURE_B2C_TENANT_NAME = os.getenv('AZURE_B2C_TENANT_NAME')
