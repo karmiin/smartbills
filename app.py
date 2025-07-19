@@ -19,10 +19,25 @@ if not os.getenv('WEBSITE_SITE_NAME'):  # Solo in sviluppo locale
 load_dotenv()
 
 # Check if we're in testing mode
+TESTING = os.getenv('TESTING', 'False').lower() == 'true'
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'development-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Configurazione Flask Session per Azure Web App
+# In Azure Web App, il filesystem potrebbe essere read-only, quindi NON usiamo Flask-Session
+if os.getenv('WEBSITE_SITE_NAME'):  # Rileva se siamo su Azure Web App
+    # Su Azure Web App, usa le sessioni Flask standard (non Flask-Session)
+    app.config['SESSION_PERMANENT'] = False
+    # NON inizializzare Flask-Session su Azure
+else:
+    # Per sviluppo locale, usa Flask-Session con filesystem
+    app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['SESSION_PERMANENT'] = False
+    app.config['SESSION_USE_SIGNER'] = True
+    app.config['SESSION_KEY_PREFIX'] = 'pdf_app:'
+    Session(app)
 
 # Configurazione Azure AD B2C
 AZURE_B2C_TENANT_NAME = os.getenv('AZURE_B2C_TENANT_NAME')
@@ -46,6 +61,10 @@ if not azure_b2c_configured:
     print("Per la produzione, configura Azure AD B2C per permettere registrazione/login degli utenti")
 
 # Verifica e inizializza Azure Storage
+if TESTING:
+    # Durante i test, non inizializziamo Azure
+    blob_service_client = None
+    container_client = None
 elif not AZURE_STORAGE_CONNECTION_STRING or AZURE_STORAGE_CONNECTION_STRING == 'DefaultEndpointsProtocol=https;AccountName=your_storage_account_name;AccountKey=your_storage_account_key;EndpointSuffix=core.windows.net':
     print("ATTENZIONE: Configurazioni Azure mancanti!")
     print("Modifica il file .env con le tue credenziali Azure reali")
@@ -293,11 +312,18 @@ def login():
     if not msal_app:
         flash("Errore nella configurazione dell'autenticazione", "error")
         return redirect(url_for('home'))
+    
+    # Debug: stampa il redirect URI che sta usando
+    print(f"DEBUG - AZURE_B2C_REDIRECT_URI: {AZURE_B2C_REDIRECT_URI}")
+    print(f"DEBUG - WEBSITE_SITE_NAME: {os.getenv('WEBSITE_SITE_NAME')}")
+    
     # Costruisci l'URL di autorizzazione per Azure AD B2C
     auth_url = msal_app.get_authorization_request_url(
         AZURE_B2C_SCOPES,
         redirect_uri=AZURE_B2C_REDIRECT_URI
     )
+    
+    print(f"DEBUG - Auth URL generato: {auth_url}")
     return redirect(auth_url)
 
 @app.route("/auth/callback")
