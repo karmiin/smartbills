@@ -25,4 +25,4 @@ Sistema intelligente per la gestione delle bollette con AI e analytics avanzati.
 3. Configura Azure nel file `.env`
 4. Esegui l'applicazione: `python app.py`
 
-Smart Bills - Gestione intelligente delle bollette con il potere dell'AI.
+Smart Bills - Gestione intelligente delle bollette.
