@@ -11,7 +11,6 @@ import msal
 from functools import wraps
 from bill_processor import bill_processor
 
-# Forza rebuild Azure - 2025-07-19
 load_dotenv()
 TESTING = os.getenv('TESTING', 'False').lower() == 'true'
 

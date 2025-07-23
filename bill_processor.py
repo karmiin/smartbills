@@ -428,16 +428,15 @@ class BillProcessor:
             if len(monthly_data) < 3:
                 return self._generate_mock_forecast(months_ahead, bills)
             
-            # Migliora l'algoritmo locale con multiple tecniche
-            # Temporaneamente usiamo sempre l'algoritmo lineare per debug
+
             forecast_data = self._calculate_linear_forecast(monthly_data, months_ahead, bill_type)
             
-            # if len(monthly_data) >= 6:
-            #     # Usa algoritmo avanzato locale per dati sufficienti
-            #     forecast_data = self._calculate_advanced_local_forecast(monthly_data, months_ahead, bill_type)
-            # else:
-            #     # Usa algoritmo semplice per pochi dati
-            #     forecast_data = self._calculate_linear_forecast(monthly_data, months_ahead)
+            if len(monthly_data) >= 6:
+                 # Usa algoritmo avanzato locale per dati sufficienti
+                forecast_data = self._calculate_advanced_local_forecast(monthly_data, months_ahead, bill_type)
+            else:
+                # Usa algoritmo semplice per pochi dati
+                forecast_data = self._calculate_linear_forecast(monthly_data, months_ahead)
             
             return forecast_data
             
