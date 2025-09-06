@@ -18,10 +18,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'development-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Usa solo le sessioni Flask standard (no Flask-Session)
 # Configurato per Azure Web App
 app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_TYPE'] = None  # Usa le sessioni Flask standard
+app.config['SESSION_TYPE'] = None
 
 # Configurazione Azure AD B2C
 AZURE_B2C_TENANT_NAME = os.getenv('AZURE_B2C_TENANT_NAME')
@@ -41,18 +40,13 @@ AZURE_CONTAINER_NAME = os.getenv('AZURE_BLOB_CONTAINER_NAME')
 azure_b2c_configured = bool(AZURE_B2C_CLIENT_ID and AZURE_B2C_CLIENT_SECRET and AZURE_B2C_TENANT_ID and AZURE_B2C_AUTHORITY)
 if not azure_b2c_configured:
     print("ATTENZIONE: Azure AD B2C non configurato!")
-    print("L'app funzionerà senza autenticazione (modalità sviluppo)")
-    print("Per la produzione, configura Azure AD B2C per permettere registrazione/login degli utenti")
 
 # Verifica e inizializza Azure Storage
 if TESTING:
-    # Durante i test, non inizializziamo Azure
     blob_service_client = None
     container_client = None
 elif not AZURE_STORAGE_CONNECTION_STRING or AZURE_STORAGE_CONNECTION_STRING == 'DefaultEndpointsProtocol=https;AccountName=your_storage_account_name;AccountKey=your_storage_account_key;EndpointSuffix=core.windows.net':
     print("ATTENZIONE: Configurazioni Azure mancanti!")
-    print("Modifica il file .env con le tue credenziali Azure reali")
-    print("L'app funzionerà solo quando Azure sarà configurato correttamente")
     blob_service_client = None
     container_client = None
 else:
@@ -81,7 +75,6 @@ else:
         container_client = None
 
 
-# Funzioni di autenticazione
 def get_msal_app():
     """Crea un'istanza MSAL per Azure AD B2C"""
     if not azure_b2c_configured:
@@ -245,8 +238,8 @@ def get_file_info(filename, user_folder=None):
         blob_properties = blob_client.get_blob_properties()
         
         return {
-            'name': filename,  # Nome originale senza il percorso
-            'blob_name': blob_name,  # Nome completo del blob
+            'name': filename,
+            'blob_name': blob_name,
             'size': blob_properties.size,
             'size_mb': round(blob_properties.size / (1024 * 1024), 2),
             'upload_time': blob_properties.last_modified.replace(tzinfo=None),
@@ -257,7 +250,6 @@ def get_file_info(filename, user_folder=None):
         return None
 
 def get_uploaded_files(user_folder=None):
-    """Ottiene la lista di tutti i file PDF caricati dall'utente da Azure"""
     files = []
     
     if not container_client:
@@ -358,11 +350,9 @@ def auth_callback():
 
 @app.route("/logout")
 def logout():
-    """Effettua il logout"""
     user = get_current_user()
     if user:
         flash(f"Arrivederci, {user['name']}!", "info")
-    
     session.clear()
     
     if azure_b2c_configured:

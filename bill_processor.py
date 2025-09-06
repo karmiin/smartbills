@@ -1,8 +1,3 @@
-"""
-Modulo per l'estrazione e analisi dei dati dalle bollette PDF
-usando Azure Form Recognizer e Cosmos DB
-"""
-
 import os
 import re
 import json
@@ -35,7 +30,6 @@ class BillProcessor:
         self._init_services()
     
     def _init_services(self):
-        """Inizializza i servizi Azure se configurati"""
         try:
             # Inizializza Form Recognizer
             if self.form_recognizer_endpoint and self.form_recognizer_key:
@@ -68,9 +62,6 @@ class BillProcessor:
             pass
     
     def extract_bill_data(self, pdf_stream, filename, user_id):
-        """
-        Estrae i dati da un PDF di bolletta usando Azure Form Recognizer
-        """
         if not self.form_client:
             return self._extract_data_manual(pdf_stream, filename, user_id)
         
@@ -96,9 +87,7 @@ class BillProcessor:
             # Fallback a estrazione manuale
             return self._extract_data_manual(pdf_stream, filename, user_id)
     
-    def _parse_form_recognizer_result(self, result, filename, user_id):
-        """Analizza il risultato di Form Recognizer ed estrae i dati rilevanti"""
-        
+    def _parse_form_recognizer_result(self, result, filename, user_id):   
         # Combina tutto il testo per l'analisi
         full_text = ""
         for page in result.pages:
@@ -600,13 +589,6 @@ class BillProcessor:
         return forecast_data
     
     def _calculate_advanced_local_forecast(self, monthly_data, months_ahead, bill_type):
-        """
-        Algoritmo avanzato locale per forecast - combinazione di:
-        - Regressione lineare
-        - Media mobile esponenziale  
-        - Deteczione stagionalità
-        - Adjustment per tipo bolletta
-        """
         if len(monthly_data) < 6:
             return self._calculate_linear_forecast(monthly_data, months_ahead, bill_type)
         
@@ -619,7 +601,7 @@ class BillProcessor:
         slope, intercept = linear_coeffs
         
         # 2. Calcola media mobile esponenziale (più peso ai dati recenti)
-        alpha = 0.3  # Smoothing factor
+        alpha = 0.3 
         ema = [amounts[0]]
         for i in range(1, len(amounts)):
             ema.append(alpha * amounts[i] + (1 - alpha) * ema[i-1])
@@ -637,7 +619,7 @@ class BillProcessor:
             for month_num in seasonal_pattern:
                 seasonal_pattern[month_num] = np.mean(seasonal_pattern[month_num])
         
-        # 4. Adjustment per tipo bolletta (più conservativi)
+        # 4. Adjustment per tipo bolletta
         bill_type_factors = {
             'electricity': {'winter': 1.1, 'summer': 1.15, 'other': 1.0},
             'gas': {'winter': 1.2, 'summer': 0.8, 'other': 1.0},
@@ -666,9 +648,8 @@ class BillProcessor:
             # Combinazione predizioni
             x_future = len(monthly_data) + i - 1
             linear_pred = slope * x_future + intercept
-            ema_pred = last_ema * (1 + slope/avg_amount * 0.05)  # EMA con trend adjustment più conservativo
+            ema_pred = last_ema * (1 + slope/avg_amount * 0.05)
             
-            # Peso 70% linear, 30% EMA (più peso al linear che è più stabile)
             base_prediction = 0.7 * linear_pred + 0.3 * ema_pred
             
             # Applica stagionalità se disponibile
@@ -829,7 +810,4 @@ class BillProcessor:
                 return 0
         return 0
     
-
-
-# Istanza globale del processore
 bill_processor = BillProcessor()
