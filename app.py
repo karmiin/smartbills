@@ -73,8 +73,6 @@ else:
         print("Verifica le credenziali Azure nel file .env")
         blob_service_client = None
         container_client = None
-
-
 def get_msal_app():
     """Crea un'istanza MSAL per Azure AD B2C"""
     if not azure_b2c_configured:
@@ -331,9 +329,9 @@ def auth_callback():
                 # Controlla se è un nuovo utente basandoci sui claims
                 user_claims = result.get("id_token_claims", {})
                 if user_claims.get('newUser') or user_claims.get('name') == 'unknown':
-                    flash(f"Benvenuto nella tua nuova area, {user['name']}! 🎉", "success")
+                    flash(f"Benvenuto nella tua nuova area, {user['name']}!", "success")
                 else:
-                    flash(f"Bentornato, {user['name']}! 👋", "success")
+                    flash(f"Bentornato, {user['name']}!", "success")
                     
                 return redirect(url_for('dashboard'))
             else:

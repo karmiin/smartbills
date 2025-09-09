@@ -14,42 +14,8 @@
                             <h2><i class="fas fa-file-invoice-dollar me-2"></i>Gestione Bollette</h2>
                             <p class="mb-1">
                                 <i class="fas fa-user me-1"></i>{{ user.name }} ({{ user.email }})
-                            <// Funzioni per gestire il reset forzato
-function forceReloadForecast() {
-    // Distruggi il forecast esistente
-    if (forecastChart) {
-        forecastChart.destroy();
-        forecastChart = null;
-    }
-    
-    // Ricarica forzato - solo per tipi specifici
-    const billType = document.getElementById('forecastType').value;
-    
-    if (!billType) {
-        displayForecastError('Seleziona un tipo di bolletta per le previsioni');
-        return;
-    }
-    
-    const url = `/bills/api/forecast?type=${billType}`;
-    
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => Promise.reject(err));
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                displayForecastError(data.message || data.error);
-            } else {
-                createForecastChart(data);
-                displayForecastInfo(data);
-            }
-        })
-        .catch(error => {
-            console.error('Errore caricamento forecast:', error);
-            displayForecastError(error.message || 'Errore nel caricamento delle previsioni');             <p class="mb-0 opacity-75">
+                            </p>
+                            <p class="mb-0 opacity-75">
                                 <i class="fas fa-robot me-1"></i>Estrazione automatica dati con Azure AI
                             </p>
                         </div>
